@@ -1,0 +1,69 @@
+pipeline {
+  environment {
+    registry = "gopalsvs/miniproject"
+    registryCredential = 'docker_jenkins'
+    dockerImage = ''
+  }
+  agent any
+  stages {
+    stage('CLONING GIT') {
+      steps {
+        git 'https://github.com/Gopalsvs/SPE_mini_pro'
+      }
+    }
+    stage('MAVEN COMPILE') {
+      steps {
+        echo "Compiling the source Java classes of the project"
+		sh "mvn compile"
+      }
+    }
+    stage('MAVEN TEST') {
+      steps {
+        echo "Running the test cases of the project"
+        sh "mvn test"
+      }
+    }
+    stage('MAVEN INSTALL') {
+      steps {
+        echo "building the project and installs the project files(JAR) to the local repository"
+        sh "mvn install"
+      }
+    }
+    stage('BUILDING DOCKER IMAGE') {
+      steps{
+        script {
+          echo "Building Docker image"
+          dockerImage = docker.build registry + ":$BUILD_NUMBER"
+        }
+      }
+    }
+    stage('DEPLOYING DOCKER IMAGE') {
+      steps{
+        script {
+          echo "Deploying Docker Image to " + registry
+          docker.withRegistry( '', registryCredential ) {
+            dockerImage.push('latest')
+          }
+        }
+      }
+    }
+    stage('REMOVING UNUSED DOCKER IMAGES') {
+      steps{
+        sh "docker rmi $registry:$BUILD_NUMBER"
+        sh "docker image prune"
+      }
+    }
+    stage('ANSIBLE ') {
+      steps{
+        // ansiblePlaybook becomeUser: null, colorized: true, disableHostKeyChecking: true, installation: 'Ansible', inventory: 'inventory', playbook: 'scical.yml', sudoUser: null
+      }
+    }  
+  }
+//   post 
+//     {
+//         always 
+//         {
+//             emailext body: 'A Test EMail', recipientProviders: [[$class: 'DevelopersRecipientProvider'], [$class: 'RequesterRecipientProvider']], subject: 'Test'
+//         }
+//     }
+}

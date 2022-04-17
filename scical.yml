@@ -1,0 +1,8 @@
+---
+- name: ansible
+  hosts: suchith
+  tasks:
+    - name: docker_image
+      docker_image:
+        name: gopalsvs/miniproject
+        source: pull
